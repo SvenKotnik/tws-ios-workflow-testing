@@ -19,3 +19,4 @@ jobs:
           jiraEmail: "hudson@inova.si"
           jiraToken: ${{secrets.JIRA_TOKEN}}
           githubToken: ${{secrets.GITHUB_TOKEN}}
+
