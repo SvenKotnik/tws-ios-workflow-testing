@@ -30,9 +30,10 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "tag=v$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Generate Changelog
-        run: |
-          conventional-changelog -p angular -i CHANGELOG.md -s -t "v$VERSION"
+      - name: "Generate changelog"
+        uses: pmuraus/spotlight-changelog-generator-action@main
+        with:
+          jiraBaseUrl: https://inova-it.atlassian.net/
 
       - name: Commit Changelog (optional)
         run: |
