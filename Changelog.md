@@ -1,8 +1,7 @@
 ### Bug Fixes
 
-*  space
-*  filename
+*  file name for changelog
 
 ### Miscellaneous
 
-* chore: release 0.1.82
+* chore: release 0.1.83
