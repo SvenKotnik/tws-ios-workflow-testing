@@ -38,3 +38,4 @@ jobs:
           fastlane do_tests
 
       - run: fastlane execute_periphery_script
+
