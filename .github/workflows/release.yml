@@ -8,71 +8,56 @@ jobs:
     concurrency:
       group: release-${{ github.ref }}
     name: Build
-    runs-on: "self-hosted-mac"
+    runs-on: "ubuntu-latest"
     steps:
-      - name: Validate xcode version
-        run: |
-          XCODE_VERSION=$(/usr/bin/xcodebuild -version 2>/dev/null | head -1)
-          echo ${XCODE_VERSION}
-          if [ "$XCODE_VERSION" == "Xcode 16.1" ]
-          then
-              echo "Version up to date"
-          else
-              echo "wrong version"
-              exit 1
-          fi
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - uses: actions/checkout@v3
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          fetch-depth: 0
+          node-version: '20'
 
-      - uses: jdx/mise-action@v2
-        with:
-          log_level: debug
+      - name: Install Conventional Changelog CLI
+        run: npm install -g conventional-changelog-cli
 
-      - name: Update App Version
+      - name: Read Version from version.txt
+        id: version
         run: |
-          NEW_VERSION="0.1.${{ github.run_number }}"
-          echo "MARK_VERSION=${NEW_VERSION}" >> $GITHUB_ENV
-          echo "BUILD_NUMBER=1"  >> $GITHUB_ENV
-          echo "MARK_VERSION=${NEW_VERSION}, BUILD_NUMBER=${BUILD_NUMBER}"
+          VERSION=$(cat version.txt)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
 
-      - name: "Instal certificates and provision profiles, Build staging"
+      - name: Generate Changelog
+        run: |
+          conventional-changelog -p angular -i CHANGELOG.md -s -t "v$VERSION"
+
+      - name: Commit Changelog (optional)
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add CHANGELOG.md
+          git commit -m "chore: update changelog for v$VERSION" || echo "No changes to commit"
+          git push origin workflow
+
+      - name: Create Git Tag
+        run: |
+          git tag v$VERSION
+          git push origin v$VERSION
+
+      - name: Read Changelog for Latest Release Notes
+        id: changelog
+        run: |
+          changelog=$(awk '/^## \[v?'"$VERSION"'\]/{flag=1; next} /^## \[/{flag=0} flag' CHANGELOG.md)
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$changelog" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Release ${{ steps.version.outputs.tag }}
+          body: ${{ steps.changelog.outputs.changelog }}
         env:
-          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
-          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
-          CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
-          API_KEY_JSON: ${{ secrets.API_KEY_JSON }}
-        run: |
-          export KEYCHAIN_PATH=app-signing.keychain-db
-          export CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
-          export API_JSON=$API_KEY_JSON
-
-          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
-
-      - name: "Generate changelog"
-        uses: pmuraus/spotlight-changelog-generator-action@main
-        with:
-          jiraBaseUrl: https://inova-it.atlassian.net/
-
-      - name: Upload build
-        uses: pmuraus/spotlight-upload-action@main
-        with:
-          buildName: "iOS Release"
-          buildVersion: "${{env.MARK_VERSION}}-${{ env.BUILD_NUMBER }}"
-          files: "./Changelog.md"
-          apiKey: ${{secrets.SPOTLIGHT_KEY}}
-
-      - name: Tag build
-        env:
-          TAG_BUILD: "${{env.MARK_VERSION}}"
-        run: |
-          git tag ${{env.TAG_BUILD}}
-          git push origin ${{env.TAG_BUILD}}
-
-      - name: Generate Changelog and Create Release
-        uses: cycjimmy/semantic-release-action@v4
-        with:
-          semantic_version: 19
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
