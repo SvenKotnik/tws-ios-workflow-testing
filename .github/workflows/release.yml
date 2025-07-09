@@ -38,7 +38,7 @@ jobs:
           git config user.email github-actions@github.com
           git add CHANGELOG.md
           git commit -m "chore: update changelog for v$VERSION" || echo "No changes to commit"
-          git push origin workflow
+          git push
 
       - name: Create Git Tag
         run: |
