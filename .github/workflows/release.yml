@@ -8,27 +8,11 @@ jobs:
     concurrency:
       group: release-${{ github.ref }}
     name: Build
-    runs-on: "self-hosted-mac"
+    runs-on: "ubuntu-latest"
     steps:
-      - name: Validate xcode version
-        run: |
-          XCODE_VERSION=$(/usr/bin/xcodebuild -version 2>/dev/null | head -1)
-          echo ${XCODE_VERSION}
-          if [ "$XCODE_VERSION" == "Xcode 16.1" ]
-          then
-              echo "Version up to date"
-          else
-              echo "wrong version"
-              exit 1
-          fi
-
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-
-      - uses: jdx/mise-action@v2
-        with:
-          log_level: debug
 
       - name: Update App Version
         run: |
@@ -36,32 +20,6 @@ jobs:
           echo "MARK_VERSION=${NEW_VERSION}" >> $GITHUB_ENV
           echo "BUILD_NUMBER=1"  >> $GITHUB_ENV
           echo "MARK_VERSION=${NEW_VERSION}, BUILD_NUMBER=${BUILD_NUMBER}"
-
-      - name: "Instal certificates and provision profiles, Build staging"
-        env:
-          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
-          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
-          CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
-          API_KEY_JSON: ${{ secrets.API_KEY_JSON }}
-        run: |
-          export KEYCHAIN_PATH=app-signing.keychain-db
-          export CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
-          export API_JSON=$API_KEY_JSON
-
-          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
-
-      - name: "Generate changelog"
-        uses: pmuraus/spotlight-changelog-generator-action@main
-        with:
-          jiraBaseUrl: https://inova-it.atlassian.net/
-
-      - name: Upload build
-        uses: pmuraus/spotlight-upload-action@main
-        with:
-          buildName: "iOS Release"
-          buildVersion: "${{env.MARK_VERSION}}-${{ env.BUILD_NUMBER }}"
-          files: "./Changelog.md"
-          apiKey: ${{secrets.SPOTLIGHT_KEY}}
 
       - name: Tag build
         env:
