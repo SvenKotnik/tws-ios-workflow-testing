@@ -10,47 +10,54 @@ jobs:
     name: Build
     runs-on: "ubuntu-latest"
     steps:
-      - name: Checkout code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up Git
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-      - name: Get latest version tag
-        id: get_version
-        run: |
-          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
-          echo "Latest tag: $latest_tag"
-          echo "latest_tag=$latest_tag" >> $GITHUB_OUTPUT
+      - name: Install Conventional Changelog CLI
+        run: npm install -g conventional-changelog-cli
 
-      - name: Bump patch version
-        id: bump_version
+      - name: Read Version from version.txt
+        id: version
         run: |
-          IFS='.' read -r major minor patch <<< "${{ steps.get_version.outputs.latest_tag }}"
-          new_version="$major.$minor.$((patch + 1))"
-          echo "New version: $new_version"
-          echo "new_version=$new_version" >> $GITHUB_OUTPUT
+          VERSION=$(cat version.txt)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Create changelog
-        id: changelog
+      - name: Generate Changelog
         run: |
-          changelog=$(git log --pretty=format:"- %s" ${{ steps.get_version.outputs.latest_tag }}..HEAD)
-          echo "changelog<<EOF" >> $GITHUB_ENV
-          echo "$changelog" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          conventional-changelog -p angular -i CHANGELOG.md -s -t "v$VERSION"
+
+      - name: Commit Changelog (optional)
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add CHANGELOG.md
+          git commit -m "chore: update changelog for v$VERSION" || echo "No changes to commit"
+          git push origin workflow
 
       - name: Create Git Tag
         run: |
-          git tag ${{ steps.bump_version.outputs.new_version }}
-          git push origin ${{ steps.bump_version.outputs.new_version }}
+          git tag v$VERSION
+          git push origin v$VERSION
+
+      - name: Read Changelog for Latest Release Notes
+        id: changelog
+        run: |
+          changelog=$(awk '/^## \[v?'"$VERSION"'\]/{flag=1; next} /^## \[/{flag=0} flag' CHANGELOG.md)
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$changelog" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.bump_version.outputs.new_version }}
-          name: Release ${{ steps.bump_version.outputs.new_version }}
-          body: ${{ env.changelog }}
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Release ${{ steps.version.outputs.tag }}
+          body: ${{ steps.changelog.outputs.changelog }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
