@@ -51,7 +51,7 @@ jobs:
       - name: Read Changelog for Latest Release Notes
         id: changelog
         run: |
-          changelog=$(awk '/^## \[v?'"$VERSION"'\]/{flag=1; next} /^## \[/{flag=0} flag' CHANGELOG.md)
+          changelog=$(awk '/^## \[v?'"$VERSION"'\]/{flag=1; next} /^## \[/{flag=0} flag' Changelog.md)
           echo "changelog<<EOF" >> $GITHUB_OUTPUT
           echo "$changelog" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
