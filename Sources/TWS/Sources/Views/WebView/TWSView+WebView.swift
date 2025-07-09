@@ -110,7 +110,7 @@ struct WebView: UIViewRepresentable {
         if enablePullToRefresh {
             // process content on reloads
             context.coordinator.pullToRefresh.enable(on: webView) {
-                reloadWithProcessedResources(webView: webView, snippet: snippet)
+                reloadWithProcessedResources(webView: webView)
             }
         }
 
@@ -174,10 +174,10 @@ struct WebView: UIViewRepresentable {
         if regainedNetworkConnection, case .failed = state.loadingState {
             if uiView.url == nil {
                 updateState(for: uiView, loadingState: .loading)
-                reloadWithProcessedResources(webView: uiView, snippet: snippet)
+                reloadWithProcessedResources(webView: uiView)
                 stateUpdated = true
             } else if !uiView.isLoading {
-                reloadWithProcessedResources(webView: uiView, snippet: snippet)
+                reloadWithProcessedResources(webView: uiView)
             }
         }
 
@@ -228,7 +228,7 @@ struct WebView: UIViewRepresentable {
         }
     }
     
-    private func loadProcessedContent(webView: WKWebView) {
+    func loadProcessedContent(webView: WKWebView) {
         let key = TWSSnippet.Attachment(url: targetURL, contentType: .html)
         
         if let preloaded = preloadedResources[key] {
@@ -276,11 +276,10 @@ struct WebView: UIViewRepresentable {
         return preloadedHTML
     }
     
-    private func reloadWithProcessedResources(
-        webView: WKWebView,
-        snippet: TWSSnippet
+    func reloadWithProcessedResources(
+        webView: WKWebView
     ) {
-        let key = TWSSnippet.Attachment(url: snippet.target, contentType: .html)
+        let key = TWSSnippet.Attachment(url: targetURL, contentType: .html)
         let resource = preloadedResources[key]
         if let currentUrl = state.currentUrl, currentUrl != resource?.responseUrl {
             webView.load(URLRequest(url: currentUrl))

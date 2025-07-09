@@ -3,6 +3,7 @@ import TWS
 
 @main
 struct SampleApp: App {
+    @UIApplicationDelegateAdaptor(ApplicationDelegate.self) var appDelegate
 
     var body: some Scene {
         WindowGroup {

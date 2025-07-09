@@ -73,7 +73,6 @@ public enum SocketDependencyKey: DependencyKey {
                     let connection = await configuration.getValue(forKey: config.id),
                     let socket = await storage.getValue(forKey: connection)
                 else {
-                    assertionFailure("A manager has deinited, but there is no connection left to be nilled?")
                     return
                 }
 

@@ -22,7 +22,7 @@ class Router {
     private static let authManager = AuthManager(baseUrl: TWSBuildSettingsProvider.getTWSBaseUrl())
     private static let redirectDelegate = RedirectHandler()
     private static let urlSession = URLSession(configuration: URLSessionConfiguration.default, delegate: redirectDelegate, delegateQueue: nil)
-
+    
     private static let dateFormatter = {
         let newDateFormatter = DateFormatter()
         newDateFormatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ssZ"
@@ -61,7 +61,12 @@ class Router {
         logger.info(urlRequest.debugDescription)
 
         do {
-            let token = try await authManager.getAccessToken(authManager.shouldRefreshTokens())
+            let shouldRefreshTokens = await authManager.shouldRefreshTokens()
+            if shouldRefreshTokens {
+                try await authManager.forceRefreshRefreshTokens()
+            }
+            
+            let token = try await authManager.getAccessToken(shouldRefreshTokens)
 
             if request.auth {
                 urlRequest.setValue(
@@ -99,7 +104,7 @@ class Router {
                 )
             } else if httpResult.statusCode == 401 {
                 if retryEnabled {
-                    try await authManager.forceRefreshTokens()
+                    try await authManager.forceRefreshAccessTokens()
                     return try await make(request: request, retryEnabled: false)
                 } else {
                     throw APIError.server(httpResult.statusCode, result.0)

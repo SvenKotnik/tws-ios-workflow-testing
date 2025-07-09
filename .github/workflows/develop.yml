@@ -1,7 +1,8 @@
 name: Develop Build
 on:
-  push:
-    branches: [ develop ]
+  pull_request:
+    types: [ synchronize ]
+    branches: [ main, master ]
   workflow_dispatch:
 jobs:
   build_develop:
@@ -73,14 +74,3 @@ jobs:
         run: |
           git tag ${{env.TAG_BUILD}}
           git push origin ${{env.TAG_BUILD}}
-
-      - name: Update JIRA
-        uses: pmuraus/jira-ticket-transition-action@main
-        with:
-          sourceTransition: "In Review"
-          targetTransition: "Ready for QA"
-          message: "Build available in develop ${{ env.MARK_VERSION }}"
-          jiraBaseUrl: "inova-it.atlassian.net"
-          jiraEmail: "hudson@inova.si"
-          jiraToken: ${{secrets.JIRA_TOKEN}}
-          githubToken: ${{secrets.GITHUB_TOKEN}}

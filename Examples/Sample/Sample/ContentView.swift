@@ -32,11 +32,11 @@ struct ContentView: View {
                         case .customTabsExample:
                             CustomTabsExample()
                                 .twsBind(interceptor: DefaultInterceptor())
-
+                            
                         case .mustacheExample:
                             CustomMustacheExample()
                                 .twsBind(interceptor: DefaultInterceptor())
-
+                            
                         case .injectionExample:
                             CustomInjectionExample()
                                 .twsBind(interceptor: DefaultInterceptor())
@@ -44,6 +44,8 @@ struct ContentView: View {
                         case .permissionsExample:
                             CustomPermissionExample()
                                 .twsBind(interceptor: DefaultInterceptor())
+                        case .userEngagementExample:
+                            UserEngagementExamples()
                         }
                     }
             }
@@ -78,6 +80,7 @@ extension CustomInterceptor {
         case mustacheExample
         case injectionExample
         case permissionsExample
+        case userEngagementExample
     }
 }
 

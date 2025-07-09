@@ -241,4 +241,104 @@ final class SocketTests: XCTestCase {
         await store.receive(\.business.delayReconnect)
         await store.send(.business(.stopReconnecting))
     }
+    
+    @MainActor
+    func testProjectHasSocketURL() async throws {
+        var state = TWSSnippetsFeature.State(configuration: configuration)
+        let testSnippet: TWSSnippet = .init(id: "test", target: URL(string: "https://www.test.com")!)
+        
+        let socketURL = URL(string: "https://www.google.com")!
+        let stream = AsyncStream<WebSocketEvent>.makeStream()
+        let clock = TestClock()
+
+        let store = TestStore(
+            initialState: state,
+            reducer: { TWSSnippetsObserverFeature() },
+            withDependencies: {
+                $0.api.getProject = { [socketURL] _ in (TWSProject(listenOn: socketURL, snippets: [testSnippet]), nil)}
+                $0.continuousClock = clock
+                $0.socket.get = { _, _ in .init() }
+                $0.socket.connect = { _ in stream.stream }
+                $0.socket.closeConnection = { _ in }
+                $0.socket.listen = { _ in }
+                $0.date.now = Date()
+            }
+        )
+        
+        await store.send(.business(.load)) {
+            $0.state = .loading
+        }
+        
+        stream.continuation.yield(.didConnect)
+        await store.receive(\.business.projectLoaded.success) {
+            $0.state = .loaded
+            $0.snippets = .init([.init(snippet: testSnippet)])
+            $0.socketURL = socketURL
+            $0.shouldTriggerSdkInitCampaign = false
+        }
+        
+        await store.receive(\.business.sendTrigger) {
+            $0.campaigns = [.init(trigger: self.triggerId)]
+        }
+        await store.receive(\.business.startVisibilityTimers)
+        await store.receive(\.business.listenForChanges)
+        
+        await store.receive(\.business.trigger[id: triggerId].business.checkTrigger)
+        await store.receive(\.business.trigger[id: triggerId].business.campaignLoaded)
+        
+        await store.receive(\.business.isSocketConnected) {
+            $0.isSocketConnected = true
+        }
+        
+        await store.receive(\.business.load) {
+            $0.state = .loading
+        }
+        await store.receive(\.business.projectLoaded.success) {
+            $0.state = .loaded
+        }
+        await store.receive(\.business.startVisibilityTimers)
+        
+        await store.send(.business(.stopListeningForChanges))
+        await store.receive(\.business.delayReconnect)
+        await store.send(.business(.stopReconnecting))
+    }
+    
+    @MainActor
+    func testProjectHasNoSocketURL() async throws {
+        var state = TWSSnippetsFeature.State(configuration: configuration)
+        let testSnippet: TWSSnippet = .init(id: "test", target: URL(string: "https://www.test.com")!)
+        
+        let stream = AsyncStream<WebSocketEvent>.makeStream()
+        let clock = TestClock()
+
+        let store = TestStore(
+            initialState: state,
+            reducer: { TWSSnippetsObserverFeature() },
+            withDependencies: {
+                $0.api.getProject = { [socketURL] _ in (TWSProject(listenOn: nil, snippets: [testSnippet]), nil)}
+                $0.continuousClock = clock
+                $0.socket.get = { _, _ in .init() }
+                $0.socket.connect = { _ in stream.stream }
+                $0.socket.closeConnection = { _ in }
+                $0.socket.listen = { _ in }
+                $0.date.now = Date()
+            }
+        )
+        
+        await store.send(.business(.load)) {
+            $0.state = .loading
+        }
+        
+        await store.receive(\.business.projectLoaded) {
+            $0.state = .loaded
+            $0.snippets = .init([.init(snippet: testSnippet)])
+            $0.shouldTriggerSdkInitCampaign = false
+        }
+        await store.receive(\.business.sendTrigger) {
+            $0.campaigns = [.init(trigger: self.triggerId)]
+        }
+        await store.receive(\.business.startVisibilityTimers)
+        await store.receive(\.business.trigger[id: triggerId].business.checkTrigger)
+        await store.receive(\.business.trigger[id: triggerId].business.campaignLoaded)
+    }
 }

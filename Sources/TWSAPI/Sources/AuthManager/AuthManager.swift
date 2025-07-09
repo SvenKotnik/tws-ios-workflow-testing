@@ -52,7 +52,11 @@ actor AuthManager {
         return false
     }
     
-    func forceRefreshTokens() async throws {
+    func forceRefreshRefreshTokens() async throws {
+        _ = try await getRefreshToken(true)
+    }
+    
+    func forceRefreshAccessTokens() async throws {
         _ = try await getAccessToken(true)
     }
 

@@ -15,15 +15,8 @@
     {
       "target" : {
         "containerPath" : "container:..\/..",
-        "identifier" : "InjectionTests",
-        "name" : "InjectionTests"
-      }
-    },
-    {
-      "target" : {
-        "containerPath" : "container:..\/..",
-        "identifier" : "TWSLoggerTests",
-        "name" : "TWSLoggerTests"
+        "identifier" : "TWSSnippetsTests",
+        "name" : "TWSSnippetsTests"
       }
     },
     {
@@ -36,6 +29,13 @@
     {
       "target" : {
         "containerPath" : "container:..\/..",
+        "identifier" : "TWSLoggerTests",
+        "name" : "TWSLoggerTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:..\/..",
         "identifier" : "RouterTests",
         "name" : "RouterTests"
       }
@@ -43,8 +43,15 @@
     {
       "target" : {
         "containerPath" : "container:..\/..",
-        "identifier" : "TWSSnippetsTests",
-        "name" : "TWSSnippetsTests"
+        "identifier" : "InjectionTests",
+        "name" : "InjectionTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:..\/..",
+        "identifier" : "TWSNotificationsTests",
+        "name" : "TWSNotificationsTests"
       }
     },
     {

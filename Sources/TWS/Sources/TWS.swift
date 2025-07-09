@@ -108,6 +108,21 @@ public final class TWSManager: Identifiable {
     public func forceRefresh() {
         store.send(.snippets(.business(.load)))
     }
+    
+    
+    /// Sends a custom event to remote services, searching for corresponding snippets.
+    /// - Parameter event: name of an event, that can be assosiated with snippets.
+    ///
+    /// When this function is called with a new event for the first time, the event will become visible in your projects web portal dashboard.
+    /// Afterwards if this function is called and a snippet is assosiated with it, the snippet will be opened as a full screen overlay.
+    public func logEvent(_ event: String) {
+        guard isRegistered else {
+            logger.warn("Log Event ignored, TWSManager is not registered with remote services.")
+            return
+        }
+        
+        store.send(.snippets(.business(.sendTrigger(event))))
+    }
 
     /// Starts listening for updates from the SDK. This method provides a callback that is triggered for each event.
     ///

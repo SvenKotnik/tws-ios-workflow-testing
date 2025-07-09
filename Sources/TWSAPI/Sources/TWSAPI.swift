@@ -32,7 +32,7 @@ public struct TWSAPI {
                 let result = try await Router.make(request: .init(
                         method: .get,
                         scheme: baseUrl.scheme,
-                        path: "/projects/\(project.id)/snippets",
+                        path: "/projects/\(project.id)/snippets/v1",
                         host: baseUrl.host,
                         queryItems: [],
                         headers: [:],

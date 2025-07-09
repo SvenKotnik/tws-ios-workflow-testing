@@ -21,13 +21,13 @@ import Foundation
 public struct TWSProject: Codable, Equatable, Sendable {
 
     /// A socket used to listen for changes, such as snippet being modified, deleted or added
-    public let listenOn: URL
+    public let listenOn: URL?
 
     /// Array of snippets bind to the project
     public let snippets: [TWSSnippet]
 
     public init(
-        listenOn: URL,
+        listenOn: URL?,
         snippets: [TWSSnippet]
     ) {
         self.listenOn = listenOn

@@ -1,0 +1,21 @@
+name: Transition to ready for QA
+on:
+  push:
+    branches: [ develop ]
+  workflow_dispatch:
+jobs:
+  changePrBuild:
+    name: PR ready for review
+    runs-on: "self-hosted-mac"
+    steps:
+      - uses: actions/checkout@v2
+      - name: Update JIRA
+        uses: pmuraus/jira-ticket-transition-action@main
+        with:
+          sourceTransition: "In Review"
+          targetTransition: "Ready for QA"
+          message: "Build available in develop ${{ env.MARK_VERSION }}"
+          jiraBaseUrl: "inova-it.atlassian.net"
+          jiraEmail: "hudson@inova.si"
+          jiraToken: ${{secrets.JIRA_TOKEN}}
+          githubToken: ${{secrets.GITHUB_TOKEN}}
