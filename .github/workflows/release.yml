@@ -10,27 +10,47 @@ jobs:
     name: Build
     runs-on: "ubuntu-latest"
     steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Update App Version
+      - name: Set up Git
         run: |
-          NEW_VERSION="0.1.${{ github.run_number }}"
-          echo "MARK_VERSION=${NEW_VERSION}" >> $GITHUB_ENV
-          echo "BUILD_NUMBER=1"  >> $GITHUB_ENV
-          echo "MARK_VERSION=${NEW_VERSION}, BUILD_NUMBER=${BUILD_NUMBER}"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
 
-      - name: Tag build
-        env:
-          TAG_BUILD: "${{env.MARK_VERSION}}"
+      - name: Get latest version tag
+        id: get_version
         run: |
-          git tag ${{env.TAG_BUILD}}
-          git push origin ${{env.TAG_BUILD}}
+          latest_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
+          echo "Latest tag: $latest_tag"
+          echo "latest_tag=$latest_tag" >> $GITHUB_OUTPUT
 
-      - name: Generate Changelog and Create Release
-        uses: cycjimmy/semantic-release-action@v4
+      - name: Bump patch version
+        id: bump_version
+        run: |
+          IFS='.' read -r major minor patch <<< "${{ steps.get_version.outputs.latest_tag }}"
+          new_version="$major.$minor.$((patch + 1))"
+          echo "New version: $new_version"
+          echo "new_version=$new_version" >> $GITHUB_OUTPUT
+
+      - name: Create changelog
+        id: changelog
+        run: |
+          changelog=$(git log --pretty=format:"- %s" ${{ steps.get_version.outputs.latest_tag }}..HEAD)
+          echo "changelog<<EOF" >> $GITHUB_ENV
+          echo "$changelog" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Create Git Tag
+        run: |
+          git tag ${{ steps.bump_version.outputs.new_version }}
+          git push origin ${{ steps.bump_version.outputs.new_version }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          semantic_version: 19
+          tag_name: ${{ steps.bump_version.outputs.new_version }}
+          name: Release ${{ steps.bump_version.outputs.new_version }}
+          body: ${{ env.changelog }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
