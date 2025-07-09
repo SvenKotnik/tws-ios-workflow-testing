@@ -39,7 +39,7 @@ jobs:
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
-          git add CHANGELOG.md
+          git add Changelog.md
           git commit -m "chore: update changelog for v$VERSION" || echo "No changes to commit"
           git push
 
